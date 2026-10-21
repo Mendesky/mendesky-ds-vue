@@ -1,0 +1,110 @@
+import type { ComponentApi } from '../../docs/component-doc';
+
+export const inputDoc: ComponentApi = {
+  id: 'input',
+  selector: '<DsInput>',
+  summary: 'size: S|M|L · placeholder type inputMode sanitize initialValue errorMessage errorPosition: top|bottom · disabled readonly · @value-change @blur',
+  props: [
+    {
+      name: 'size',
+      type: 'InputSize',
+      default: "'L'",
+      desc: "'S' | 'M' | 'L'",
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      default: "'Placeholder'",
+      desc: '佔位文字',
+    },
+    {
+      name: 'type',
+      type: 'string',
+      default: "'text'",
+      desc: "HTML input type（text / date / email / number / password / tel 等）；type='password' 時自動顯示 eye toggle，clear 按鈕隱藏",
+    },
+    {
+      name: 'inputMode',
+      type: 'InputMode',
+      default: "'text'",
+      desc: '透傳至原生 inputmode，影響行動裝置鍵盤型態。\'numeric\' 跳出數字鍵盤（無符號）；\'tel\' 跳出電話鍵盤（含 + * #）。電話/手機/純數字欄位搭配 sanitize="digits" 一起用。',
+    },
+    {
+      name: 'sanitize',
+      type: "'none' | 'digits'",
+      default: "'none'",
+      desc: "輸入時自動過濾字元。'digits' = 只保留數字，非數字（英文、符號、連字號）在 input event 中即時被 strip，含 paste 情境；cursor 位置自動修正。",
+    },
+    {
+      name: 'initialValue',
+      type: 'string',
+      default: "''",
+      desc: '預填值；外部可透過此 Input 同步更新欄位內容（ngOnChanges 監聽）',
+    },
+    {
+      name: 'errorMessage',
+      type: 'string',
+      default: "''",
+      desc: '錯誤訊息；有值時切換 error 狀態並顯示在下方',
+    },
+    {
+      name: 'errorPosition',
+      type: "'top' | 'bottom'",
+      default: "'bottom'",
+      desc: '錯誤 tooltip 顯示方向（浮動，不佔版面）',
+    },
+    {
+      name: 'disabled',
+      type: 'boolean',
+      default: 'false',
+      desc: '禁用狀態',
+    },
+    {
+      name: 'readonly',
+      type: 'boolean',
+      default: 'false',
+      desc: '唯讀狀態：不可編輯、隱藏清空鈕，但文字維持正常色、可聚焦選取（展示型欄位用，如分享連結）。與 disabled 不同——disabled 文字轉淡灰且不可聚焦。',
+    },
+    {
+      name: '@value-change',
+      type: '(value: string) => void',
+      desc: '值變更事件',
+      isOutput: true,
+    },
+    {
+      name: '@blur',
+      type: '(value: string) => void',
+      desc: 'blur 事件，帶出當前值；用於需要 blur 後觸發邏輯的場景（如地址郵遞區號 lookup）',
+      isOutput: true,
+    },
+  ],
+  usage: [
+    {
+      label: '搭配 DsField 提供標題與必填標示',
+      code: `<DsField label="項目名稱" :required="true">
+  <DsInput
+    size="L"
+    placeholder="請輸入項目名稱"
+    :errorMessage="form.nameError"
+    @value-change="onNameChange($event)"
+  ></DsInput>
+</DsField>`,
+    },
+    {
+      label: '預填值（例：從 API 回填）',
+      code: `<DsInput
+  size="M"
+  :initialValue="prefillValue"
+  @value-change="prefillValue = $event"
+></DsInput>`,
+    },
+    {
+      label: '日期 input',
+      code: '<DsInput type="date" size="M" @value-change="onDateChange($event)"></DsInput>',
+    },
+    {
+      label: '唯讀展示（如分享連結，不可編輯但可讀可選取）',
+      code: '<DsInput size="M" :initialValue="shareUrl" :readonly="true"></DsInput>',
+    },
+  ],
+};
