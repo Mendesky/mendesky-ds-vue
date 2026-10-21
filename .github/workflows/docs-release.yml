@@ -1,0 +1,46 @@
+name: Docs release
+
+# 推版本 tag（vX.Y.Z 或預發布 vX.Y.Z-beta.N）時，建該版的 Vue 範例網站，發布到 gh-pages 的 /<版本>/components/。
+# Vue 版還在試做，預發布版也發布，讓本體文件網站的 PR 能先嵌入試做中的範例。
+# 本體的文件網站（mendesky-ds）在 site/frameworks.json 指定要嵌入哪一版的範例。
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 要重新發布範例網站的 tag，例如 v0.1.0 或 v0.1.0-beta.1
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: 發布 ${{ inputs.tag || github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: 檢查 tag 格式
+        run: '[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]] || { echo "不是版本 tag：$TAG"; exit 1; }'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/build-storybook-site.sh storybook-static
+      - name: 推到 gh-pages（只換這個版本的 components 資料夾）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/publish-pages.sh storybook-static "$TAG"

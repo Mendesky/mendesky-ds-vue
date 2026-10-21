@@ -1,0 +1,79 @@
+name: CI
+
+# PR 與每次 push 都跑。公開 repo 一律用 GitHub 提供的主機（自架主機會讓外部 fork 的 PR 執行任意程式碼）。
+#   typecheck   型別檢查（vue-tsc，含元件、範例頁與說明檔）
+#   check-docs  說明檢查：元件的 Vue 說明與程式碼一致、跟本體的元件規格對得上；含腳本自身的測試
+#   unit-test   元件單元測試（Vitest，真的 Chromium）
+#   smoke       建置範例網站（Storybook），逐頁打開確認畫得出來、沒有錯誤
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: 型別檢查
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  check-docs:
+    name: 說明檢查
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:scripts
+      - run: npm run check:docs
+
+  unit-test:
+    name: 單元測試
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # 版面量測類測試依字型而定：裝中文字型，讓 Linux 上的換行結果跟開發機一致
+      - name: 安裝中文字型
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+      - run: npm test
+
+  smoke:
+    name: 範例網站建置與冒煙測試
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node --test scripts/smoke-storybook.browser.mjs
+      - run: bash scripts/build-storybook-site.sh storybook-static
+      - run: node scripts/smoke-storybook.mjs storybook-static
