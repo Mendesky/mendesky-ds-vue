@@ -21,12 +21,13 @@ const emit = defineEmits<{ optionSelected: [value: unknown] }>();
 
 const optionEls = ref<HTMLButtonElement[]>([]);
 
-// 鍵盤移動時把目前選項捲進可見範圍
+// 把目前選項捲進可見範圍：鍵盤移動時，以及面板一出現時（例如按 ↑ 開啟，目前項目是最後一項）
 watch(
   () => props.activeIndex,
   (idx) => {
     if (idx >= 0) setTimeout(() => optionEls.value[idx]?.scrollIntoView({ block: 'nearest' }));
   },
+  { immediate: true },
 );
 
 function select(option: SelectOption): void {

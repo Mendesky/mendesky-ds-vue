@@ -210,3 +210,24 @@ describe('DsSelect — 操作', () => {
     expect(panel()!.querySelector('.panel-empty')!.textContent!.trim()).toBe('無符合結果');
   });
 });
+
+// 行為比對（scripts/compare/behavior.mjs）抓到的差異：選項很多時按 ↑ 開啟，
+// Angular 版面板一出現就捲到目前項目（最後一項），Vue 版原本沒有捲。
+describe('DsSelect — 面板一開啟就捲到目前項目', () => {
+  const MANY: SelectOption[] = Array.from({ length: 22 }, (_, i) => ({ value: i, label: `選項 ${i + 1}` }));
+  let wrapper: VueWrapper;
+  afterEach(() => wrapper.unmount());
+
+  it('↑ 開啟（目前項目＝最後一項）→ 最後一項在面板可見範圍內', async () => {
+    wrapper = mount(DsSelect, { props: { options: MANY }, attachTo: document.body });
+    await wrapper.find('[role="combobox"]').trigger('keydown', { key: 'ArrowUp' });
+    await nextTick();
+    await new Promise((r) => setTimeout(r, 50));
+    const scroll = document.querySelector('.ds-select-panel .panel-scroll') as HTMLElement;
+    const active = document.querySelector('.ds-select-panel .panel-option--active') as HTMLElement;
+    expect(active.textContent!.trim()).toBe('選項 22');
+    const s = scroll.getBoundingClientRect();
+    const a = active.getBoundingClientRect();
+    expect(a.top >= s.top && a.bottom <= s.bottom + 1, `目前項目 ${a.top}-${a.bottom} 不在 ${s.top}-${s.bottom} 內`).toBe(true);
+  });
+});
