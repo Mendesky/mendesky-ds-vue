@@ -20,6 +20,14 @@ test('有一頁丟錯 → 失敗並指出哪一頁', async () => {
   assert.match(result.failures[0], /demo--bad/);
 });
 
+test('範例裡有瀏覽器不認得的元素（元件沒註冊）→ 失敗並指出哪一頁、哪個標籤', async () => {
+  const result = await smokeStorybook(path.join(fixtures, 'unresolved'));
+  assert.equal(result.failures.length, 1);
+  assert.match(result.failures[0], /demo--unresolved/);
+  assert.match(result.failures[0], /dsicon/);
+  assert.match(result.failures[0], /app-icon/);
+});
+
 test('一頁都沒有 → 失敗', async () => {
   const result = await smokeStorybook(path.join(fixtures, 'empty'));
   assert.equal(result.visited, 0);

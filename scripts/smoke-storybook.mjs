@@ -1,4 +1,4 @@
-// 冒煙測試：逐一打開文件網站（Storybook 靜態建置）的每一頁，確認有畫出內容、沒有頁面錯誤。
+// 冒煙測試：逐一打開範例網站（Storybook 靜態建置）的每一頁，確認有畫出內容、沒有頁面錯誤、沒有沒註冊的元件，也沒有 Vue 的警告。
 //
 // 用法：npm run build-storybook && node scripts/smoke-storybook.mjs [storybook-static 目錄]
 // 自己起一個只綁 127.0.0.1、port 由系統分配的靜態伺服器，跑完就關。
@@ -57,6 +57,8 @@ export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
       const onError = (e) => errors.push(e.message);
       const onConsole = (msg) => {
         if (msg.type() === 'error') errors.push(msg.text());
+        // Vue 對範例寫錯（元件沒註冊、屬性型別不對）只發警告、照樣畫出其他內容，所以警告也算失敗
+        else if (msg.type() === 'warning' && msg.text().startsWith('[Vue warn]')) errors.push(msg.text());
       };
       page.on('pageerror', onError);
       page.on('console', onConsole);
@@ -67,6 +69,14 @@ export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
         await page.waitForSelector(target, { state: 'attached', timeout });
         // 給元件一點時間跑完初始化（延遲丟出的錯誤也要抓到）
         await page.waitForTimeout(150);
+        // 範例用了沒註冊的元件時，正式建置的 Vue 不發警告，只把它畫成瀏覽器不認得的標籤：
+        // 沒有連字號的（<dsicon>）是 HTMLUnknownElement；有連字號的（<app-icon>）是沒定義的自訂元素（:not(:defined)）
+        const unknown = await page.evaluate(() =>
+          [...new Set([...document.querySelectorAll('body *')]
+            .filter((el) => el instanceof HTMLUnknownElement || el.matches(':not(:defined)'))
+            .map((el) => el.tagName.toLowerCase()))],
+        );
+        if (unknown.length) errors.push(`有瀏覽器不認得的元素（元件沒註冊？）：${unknown.join(', ')}`);
       } catch (e) {
         errors.push(`沒有畫出內容（等不到 ${target}）`);
       }

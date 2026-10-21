@@ -111,7 +111,7 @@ export const IconGallery: Story = {
       .map(
         (n) => `
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border:1px solid #f0f0f0;border-radius:6px;min-width:72px;">
-          <app-icon name="${n}" size="24" style="color:#3a9ccd;"></app-icon>
+          <DsIcon name="${n}" size="24" style="color:#3a9ccd;"></DsIcon>
           <div style="font-size:10px;color:#686868;text-align:center;word-break:break-all;">${n}</div>
         </div>`
       )

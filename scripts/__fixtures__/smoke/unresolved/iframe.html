@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head>
+<body>
+<div id="storybook-root"></div><div id="storybook-docs"></div>
+<script>
+  // 模擬 Vue 範例的常見失誤：範例裡用了沒註冊的元件。正式建置的 Vue 不發警告，
+  // 只會把它當成一般標籤畫出來（<dsicon>、<app-icon>），其他內容照樣出現
+  const id = new URLSearchParams(location.search).get('id');
+  setTimeout(() => {
+    const el = document.createElement('div');
+    el.textContent = '畫出 ' + id;
+    if (id.includes('unresolved')) {
+      el.appendChild(document.createElement('DsIcon'));
+      el.appendChild(document.createElement('app-icon'));
+    }
+    document.getElementById('storybook-root').appendChild(el);
+  }, 50);
+</script>
+</body></html>
