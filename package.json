@@ -1,0 +1,57 @@
+{
+  "name": "@mendesky/ds-vue",
+  "version": "0.0.1",
+  "description": "Mendesky Design System component library for Vue 3 (trial, source-consumed)",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "sideEffects": [
+    "*.vue",
+    "*.scss"
+  ],
+  "license": "UNLICENSED",
+  "files": [
+    "src",
+    "scripts/export-docs.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:scripts": "node --test scripts/",
+    "check:docs": "node scripts/check-docs.mjs",
+    "storybook": "storybook dev -p 6007",
+    "build-storybook-site": "bash scripts/build-storybook-site.sh",
+    "smoke": "node scripts/smoke-storybook.mjs"
+  },
+  "peerDependencies": {
+    "pdfjs-dist": "3.11.174",
+    "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "@mendesky/ds": "github:Mendesky/mendesky-ds#v0.2.0-beta.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.59.0",
+    "@storybook/addon-essentials": "^8.6.19",
+    "@storybook/blocks": "^8.6.19",
+    "@storybook/vue3-vite": "^8.6.19",
+    "@vitejs/plugin-vue": "~5.2.4",
+    "@vitest/browser": "^3.2.7",
+    "@vue/test-utils": "^2.5.1",
+    "pdfjs-dist": "^3.11.174",
+    "pixelmatch": "^7.2.0",
+    "playwright": "~1.59.0",
+    "pngjs": "^7.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sass": "~1.99.0",
+    "storybook": "^8.6.19",
+    "typescript": "~5.4.2",
+    "vite": "~6.4.5",
+    "vitest": "^3.2.7",
+    "vue": "^3.5.44",
+    "vue-tsc": "~2.2.12"
+  }
+}
