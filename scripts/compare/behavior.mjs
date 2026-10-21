@@ -6,13 +6,16 @@ import { createServer } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
+
+// COMPARE_BROWSER=webkit 時改用 Safari 的引擎（WebKit）跑
+const engine = process.env.COMPARE_BROWSER === 'webkit' ? webkit : chromium;
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 
 const ANGULAR = process.argv[2] ?? 'https://mendesky.github.io/mendesky-ds-angular/v0.3.0/components/';
 const VUE_DIR = path.resolve(process.argv[3] ?? 'storybook-static');
-const OUT = path.resolve('compare-output', 'behavior');
+const OUT = path.resolve('compare-output', process.env.COMPARE_BROWSER ?? 'chromium', 'behavior');
 
 function serve(dir) {
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
@@ -281,7 +284,7 @@ const SCENARIOS = [
 const server = await serve(VUE_DIR);
 const VUE = `http://127.0.0.1:${server.address().port}/`;
 mkdirSync(OUT, { recursive: true });
-const browser = await chromium.launch();
+const browser = await engine.launch();
 const report = [];
 try {
   for (const sc of SCENARIOS) {

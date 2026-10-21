@@ -7,13 +7,16 @@
 import { createServer } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
+import { chromium, webkit } from '@playwright/test';
+
+// COMPARE_BROWSER=webkit 時改用 Safari 的引擎（WebKit）跑
+const engine = process.env.COMPARE_BROWSER === 'webkit' ? webkit : chromium;
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 
 const ANGULAR = process.argv[2] ?? 'https://mendesky.github.io/mendesky-ds-angular/v0.3.0/components/';
 const VUE_DIR = path.resolve(process.argv[3] ?? 'storybook-static');
-const OUT = path.resolve('compare-output', 'visual');
+const OUT = path.resolve('compare-output', process.env.COMPARE_BROWSER ?? 'chromium', 'visual');
 const IDS = ['icon', 'label', 'button', 'input', 'field', 'checkbox', 'select', 'dialog'];
 const VIEWPORT = { width: 900, height: 700 };
 
@@ -46,7 +49,7 @@ const ids = Object.values(index.entries)
   .filter((e) => e.type === 'story' && IDS.includes(e.id.split('--')[0]))
   .map((e) => e.id);
 
-const browser = await chromium.launch();
+const browser = await engine.launch();
 const results = [];
 try {
   const angular = await browser.newPage({ viewport: VIEWPORT });
