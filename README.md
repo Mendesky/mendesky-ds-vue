@@ -32,7 +32,7 @@ npm run check:docs     # 說明檔與元件的 defineProps／defineEmits 一致�
 npm run storybook      # 範例網站（http://localhost:6007）
 ```
 
-元件放在 `src/components/<id>/`：`Ds<名稱>.vue`、`Ds<名稱>.spec.ts`、`<id>.docs.ts`（Vue 用法）、`<id>.stories.ts`（範例，id 與 Angular 版相同）。
+元件放在 `src/components/<id>/`：`Ds<名稱>.vue`、`Ds<名稱>.spec.ts`、`<id>.docs.ts`（Vue 用法；用到 Vue 寫法的注意事項寫在 `usageNotes`，跨框架的注意事項寫在本體的元件規格）、`<id>.stories.ts`（範例，id 與 Angular 版相同）。
 
 ## 版本
 
