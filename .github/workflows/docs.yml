@@ -1,0 +1,36 @@
+name: Docs
+
+# main 有新 commit 時，重建 Vue 版的範例網站（Storybook），發布到 gh-pages 的 /main/components/。
+# 設計系統的文件網站在本體 repo（mendesky-ds）：元件頁的 Vue 分頁嵌入這裡的範例。
+# PR 不發布；PR 的建置檢查在 CI 的 smoke job。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: 發布 main 的範例網站
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: bash scripts/build-storybook-site.sh storybook-static
+      - name: 推到 gh-pages（只換 main/components 與根目錄轉址頁）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/publish-pages.sh storybook-static main
