@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head>
+<body>
+<div id="storybook-root"></div><div id="storybook-docs"></div>
+<script>
+  // 模擬說明頁沒有標出是哪個元件（少了 data-ds-id）：內容都畫對了，但冒煙測試無從對照規格
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  setTimeout(() => {
+    if (params.get('viewMode') !== 'docs') {
+      const story = document.createElement('div');
+      story.textContent = '畫出 ' + id;
+      document.getElementById('storybook-root').appendChild(story);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'sbdocs';
+    el.innerHTML =
+      '<div class="ds-doc">' +
+      '<ol><li data-testid="ds-doc-anatomy-item">外框：可以點的範圍</li><li data-testid="ds-doc-anatomy-item">文字：說明這個操作</li></ol>' +
+      '<table><tbody><tr data-testid="ds-doc-state-item"><td>預設</td><td>藍底</td></tr><tr data-testid="ds-doc-state-item"><td>停用</td><td>灰底</td></tr></tbody></table>' +
+      '<ul><li data-testid="ds-doc-do-item">撐滿寬度用 fullWidth <a href="#" data-story-id="demo--full-width">看範例</a></li><li data-testid="ds-doc-do-item">給 loadingText</li></ul>' +
+      '<ul><li data-testid="ds-doc-dont-item">不要巢狀</li></ul>' +
+      '<ul><li data-testid="ds-doc-a11y-item">Tab 移到元件</li><li data-testid="ds-doc-a11y-item">用原生 button</li></ul>' +
+      '</div>';
+    document.getElementById('storybook-docs').appendChild(el);
+  }, 50);
+</script>
+</body></html>
