@@ -10,7 +10,7 @@ export { positioning, type Placement, type CloseReason, type AttachOptions, type
 export { default as DsLabel } from './components/label/DsLabel.vue';
 export type { LabelColor, LabelSize } from './components/label/DsLabel.vue';
 export { default as DsButton } from './components/button/DsButton.vue';
-export type { ButtonVariant, ButtonColor, ButtonSize, BtnLabelConfig } from './components/button/DsButton.vue';
+export type { ButtonVariant, ButtonColor, ButtonSize, BtnLabelConfig, ButtonAriaCurrent } from './components/button/DsButton.vue';
 export { default as DsField } from './components/field/DsField.vue';
 export { default as DsInput } from './components/input/DsInput.vue';
 export type { InputSize, InputMode, InputSanitize } from './components/input/DsInput.vue';

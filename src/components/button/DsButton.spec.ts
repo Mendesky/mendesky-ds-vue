@@ -131,3 +131,81 @@ describe('DsButton — 外觀', () => {
     expect(wrapper.find('.btn__shortcut').text()).toBe('⌘N');
   });
 });
+
+// 報讀契約（2026-10-28，與 Angular 版 app-button 同步）：
+// ariaLabel／ariaPressed／ariaCurrent 落在內層原生 button；沒設就不輸出屬性。
+// 內層 button 沒有任何文字、也沒有 ariaLabel 時，開發模式印一次 console.warn（載入中除外）。
+describe('DsButton — 報讀名稱與狀態', () => {
+  let wrapper: VueWrapper;
+  afterEach(() => wrapper.unmount());
+
+  it('ariaLabel 有設時落在內層 button 的 aria-label', () => {
+    wrapper = mount(DsButton, { props: { leftIcon: 'LeftArrow', ariaLabel: '上一頁' } });
+    expect(btn(wrapper).getAttribute('aria-label')).toBe('上一頁');
+  });
+
+  it('ariaLabel 沒設時沒有 aria-label，也不會落在外層', () => {
+    wrapper = mount(DsButton, { props: { text: '確認' } });
+    expect(btn(wrapper).hasAttribute('aria-label')).toBe(false);
+    expect(wrapper.find('.ds-button').attributes('aria-label')).toBeUndefined();
+  });
+
+  it('ariaPressed 的 true／false 都照實輸出', async () => {
+    wrapper = mount(DsButton, { props: { text: '粗體', ariaPressed: true } });
+    expect(btn(wrapper).getAttribute('aria-pressed')).toBe('true');
+    await wrapper.setProps({ ariaPressed: false });
+    expect(btn(wrapper).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('ariaPressed 沒設時沒有 aria-pressed', () => {
+    wrapper = mount(DsButton, { props: { text: '粗體' } });
+    expect(btn(wrapper).hasAttribute('aria-pressed')).toBe(false);
+  });
+
+  it('ariaCurrent 有設時輸出；沒設時沒有', async () => {
+    wrapper = mount(DsButton, { props: { text: '2026-10-24 版', ariaCurrent: 'true' } });
+    expect(btn(wrapper).getAttribute('aria-current')).toBe('true');
+    await wrapper.setProps({ ariaCurrent: null });
+    expect(btn(wrapper).hasAttribute('aria-current')).toBe(false);
+  });
+});
+
+describe('DsButton — 沒有名稱的警告（開發模式）', () => {
+  let wrapper: VueWrapper;
+  let warn: ReturnType<typeof vi.spyOn>;
+  const buttonWarns = () => warn.mock.calls.filter((args) => String(args[0]).startsWith('[DsButton]'));
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    wrapper.unmount();
+    warn.mockRestore();
+  });
+
+  it('只有圖示、沒有文字也沒有 ariaLabel → 警告一次', async () => {
+    wrapper = mount(DsButton, { props: { leftIcon: 'LeftArrow' } });
+    await wrapper.setProps({ size: 'S' });
+    expect(buttonWarns()).toHaveLength(1);
+  });
+
+  it('有文字 → 不警告', () => {
+    wrapper = mount(DsButton, { props: { leftIcon: 'Plus', text: '新增' } });
+    expect(buttonWarns()).toHaveLength(0);
+  });
+
+  it('有 ariaLabel → 不警告', () => {
+    wrapper = mount(DsButton, { props: { leftIcon: 'LeftArrow', ariaLabel: '上一頁' } });
+    expect(buttonWarns()).toHaveLength(0);
+  });
+
+  it('載入中 → 不警告', () => {
+    wrapper = mount(DsButton, { props: { loading: true } });
+    expect(buttonWarns()).toHaveLength(0);
+  });
+
+  it('沒有 text 但插槽有文字 → 不警告', () => {
+    wrapper = mount(DsButton, { props: { leftIcon: 'Plus' }, slots: { default: '<span>自訂內容</span>' } });
+    expect(buttonWarns()).toHaveLength(0);
+  });
+});
