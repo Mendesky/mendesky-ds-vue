@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
-import { DsInput } from '../../index';
+import { DsField, DsInput } from '../../index';
 
 const meta: Meta<typeof DsInput> = {
   title: '表單元件/Input',
@@ -37,6 +37,7 @@ const meta: Meta<typeof DsInput> = {
       table: { defaultValue: { summary: 'false' } },
     },
     onValueChange: { action: 'valueChange' },
+    onPasswordVisibilityChange: { action: 'passwordVisibilityChange' },
   },
 };
 
@@ -119,5 +120,39 @@ export const AllStates: Story = {
       </div>
     `,
     components: { DsInput },
+  }),
+};
+
+// ── 放在欄位裡：欄位標題就是報讀名稱 ─────────────────────
+export const InField: Story = {
+  render: () => ({
+    components: { DsField, DsInput },
+    template: `
+      <div style="display:flex;flex-direction:column;gap:16px;width:300px;padding:16px;">
+        <DsField label="聯絡人姓氏" :required="true">
+          <DsInput size="L" placeholder="請輸入姓氏" />
+        </DsField>
+        <DsInput size="L" ariaLabel="分享連結" initialValue="https://example.com/s/abc123" :readonly="true" />
+      </div>
+    `,
+  }),
+};
+
+// ── 密碼：眼睛按鈕可用 Tab 移到，切換時發出 passwordVisibilityChange ──
+export const Password: Story = {
+  render: (args) => ({
+    components: { DsField, DsInput },
+    setup: () => ({ args }),
+    template: `
+      <div style="display:flex;flex-direction:column;gap:16px;width:300px;padding:16px;">
+        <DsField label="帳號">
+          <DsInput size="L" autocomplete="username" placeholder="請輸入帳號" />
+        </DsField>
+        <DsField label="密碼">
+          <DsInput size="L" type="password" autocomplete="current-password" placeholder="請輸入密碼"
+                   @password-visibility-change="args.onPasswordVisibilityChange" />
+        </DsField>
+      </div>
+    `,
   }),
 };

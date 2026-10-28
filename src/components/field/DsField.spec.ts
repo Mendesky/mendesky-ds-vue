@@ -1,5 +1,6 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import DsField from './DsField.vue';
+import DsInput from '../input/DsInput.vue';
 
 // 移植自 Angular 版 field.component.spec.ts（v0.3.0），逐條對應。
 // Angular 版用宿主元件包住 app-field；這裡用同樣的 template 字串。
@@ -105,5 +106,45 @@ describe('DsField — 標題與說明的字重', () => {
     const fields = wrapper.element.querySelectorAll('.ds-field');
     const label = fields[1].querySelector('.field-label') as HTMLElement;
     expect(getComputedStyle(label).fontWeight).toBe('700');
+  });
+});
+
+/**
+ * 標題連到裡面的輸入框（2026-10-28）：標題成為輸入框的報讀名稱。
+ * 名稱的優先順序、改字、必填的測試在 DsInput.spec.ts。
+ */
+describe('DsField — 標題連到裡面的輸入框', () => {
+  let wrapper: VueWrapper;
+  beforeEach(() => {
+    wrapper = mount(
+      {
+        components: { DsField, DsInput },
+        template: `
+          <div>
+            <DsField label="姓氏"><DsInput placeholder="王" /></DsField>
+            <DsField label="名字"><DsInput placeholder="小明" /></DsField>
+            <DsField><DsInput placeholder="搜尋" /></DsField>
+          </div>`,
+      },
+      { attachTo: document.body },
+    );
+  });
+  afterEach(() => wrapper.unmount());
+
+  it('每個欄位的標題各有不重複的 id，裡面的輸入框指向自己那個欄位的標題', () => {
+    const fields = Array.from((wrapper.element as HTMLElement).querySelectorAll<HTMLElement>('.ds-field')).slice(0, 2);
+    const ids = fields.map((f) => f.querySelector('.field-label')!.id);
+    expect(ids[0]).toBeTruthy();
+    expect(ids[1]).toBeTruthy();
+    expect(ids[0]).not.toBe(ids[1]);
+    fields.forEach((f, i) => {
+      expect(f.querySelector('.input-field')!.getAttribute('aria-labelledby')).toBe(ids[i]);
+    });
+  });
+
+  it('沒有標題的欄位 → 裡面的輸入框沒有 aria-labelledby', () => {
+    const third = (wrapper.element as HTMLElement).querySelectorAll<HTMLElement>('.ds-field')[2];
+    expect(third.querySelector('.field-label')).toBeNull();
+    expect(third.querySelector('.input-field')!.hasAttribute('aria-labelledby')).toBe(false);
   });
 });

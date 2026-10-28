@@ -30,7 +30,7 @@
     "vue": "^3.5.0"
   },
   "dependencies": {
-    "@mendesky/ds": "github:Mendesky/mendesky-ds#v0.3.1"
+    "@mendesky/ds": "github:Mendesky/mendesky-ds#v0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "~1.59.0",
