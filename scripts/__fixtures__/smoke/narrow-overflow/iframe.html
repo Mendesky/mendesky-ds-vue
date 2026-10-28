@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8"></head>
+<body>
+<div id="storybook-root"></div><div id="storybook-docs"></div>
+<script>
+  // 模擬說明頁畫出規格第 2 版欄位：每一區都有標題、項數跟測試給的規格一致，
+  // 「看範例」只出現在規格有範例的那一項，連到範例網站裡有的範例（網址與 data-story-id 一致）。
+  // plain 沒有第 2 版欄位：說明頁不畫這幾區的標題
+  const DOCS = {
+    'demo--docs':
+      '<div class="ds-doc" data-ds-id="demo">' +
+      '<h2 data-testid="ds-doc-anatomy">部位</h2>' +
+      '<ol><li data-testid="ds-doc-anatomy-item">外框：可以點的範圍</li><li data-testid="ds-doc-anatomy-item">文字：說明這個操作</li></ol>' +
+      '<h2 data-testid="ds-doc-states">狀態</h2>' +
+      '<table><tbody><tr data-testid="ds-doc-state-item"><td>預設</td><td>藍底</td></tr><tr data-testid="ds-doc-state-item"><td>停用</td><td>灰底</td></tr></tbody></table>' +
+      '<h2 data-testid="ds-doc-dodont">可以這樣做、不要這樣做</h2>' +
+      '<ul><li data-testid="ds-doc-do-item">撐滿寬度用 fullWidth <a href="./?path=/story/demo--full-width" data-story-id="demo--full-width">看範例</a></li><li data-testid="ds-doc-do-item">給 loadingText</li></ul>' +
+      '<ul><li data-testid="ds-doc-dont-item">不要巢狀 <a href="./?path=/story/demo--nested" data-story-id="demo--nested">看範例</a></li><li data-testid="ds-doc-dont-item">不要只放圖示</li></ul>' +
+      '<h2 data-testid="ds-doc-a11y">無障礙</h2>' +
+      '<h3>網頁和 APP 都要做到</h3><dl class="ds-doc-a11y"><dt class="ds-doc-a11y__label">鍵盤</dt><dd><ul><li data-testid="ds-doc-a11y-item">Tab 移到元件</li><li data-testid="ds-doc-a11y-item">Enter 觸發</li></ul></dd></dl>' +
+      '<h3>網頁專屬</h3><dl class="ds-doc-a11y"><dt class="ds-doc-a11y__label">ARIA 與 HTML 語意</dt><dd><ul><li data-testid="ds-doc-a11y-item">用原生 button</li></ul></dd></dl>' +
+      '<p>改用 <code>&lt;DsDemo&gt;</code></p>' +
+      '</div>',
+    'plain--docs': '<div class="ds-doc" data-ds-id="plain"><p>沒有第 2 版欄位的元件</p></div>',
+  };
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  setTimeout(() => {
+    if (params.get('viewMode') !== 'docs') {
+      const story = document.createElement('div');
+      // 「可以這樣做」嵌入的 demo--full-width 外框寫死 320px；demo--wide 更寬，但沒有被嵌入
+      const width = { 'demo--full-width': 320, 'demo--wide': 600 }[id];
+      story.innerHTML = width ? '<div style="width:' + width + 'px"><div style="width:100%;height:36px;background:#3a9ccd"></div></div>' : '畫出 ' + id;
+      document.getElementById('storybook-root').appendChild(story);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className = 'sbdocs';
+    el.innerHTML = DOCS[id];
+    document.getElementById('storybook-docs').appendChild(el);
+  }, 50);
+</script>
+</body></html>

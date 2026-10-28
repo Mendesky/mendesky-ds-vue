@@ -79,6 +79,24 @@ test('說明頁每一區的標題、項數、無障礙分類都跟規格一致�
   assert.deepEqual(result.failures, []);
 });
 
+test('「可以／不要這樣做」嵌入的範例在窄視窗出現橫向捲軸 → 失敗，指出範例；沒有被嵌入的範例不查', async () => {
+  // 本體文件網站把這些範例嵌在半欄寬的框裡，最窄約 240px
+  const result = await smokeStorybook(path.join(fixtures, 'narrow-overflow'), { specs: [demoSpec, plainSpec] });
+  assert.equal(result.visited, 5);
+  assert.equal(result.failures.length, 1, result.failures.join('\n'));
+  assert.match(result.failures[0], /^demo--full-width：.*240px.*橫向捲軸/);
+  // 規格引用的兩個範例（full-width、nested）都要真的量過
+  assert.equal(result.narrowChecked, 2);
+});
+
+test('「可以／不要這樣做」引用的範例一個都對不上範例網站 → 失敗，不能當成窄視窗都沒問題', async () => {
+  const spec = { ...demoSpec, dos: [{ text: '撐滿寬度用 fullWidth', story: 'gone' }], donts: [{ text: '不要巢狀', story: 'gone-too' }] };
+  const result = await smokeStorybook(path.join(fixtures, 'narrow-overflow'), { specs: [spec, plainSpec] });
+  assert.equal(result.narrowChecked, 0);
+  // 一個範例都沒量到，但說明頁的範例連結檢查會指出規格的範例在範例網站找不到，整體不會通過
+  assert.ok(result.failures.some((f) => /demo--gone/.test(f)), result.failures.join('\n'));
+});
+
 test('說明頁五區各少畫一項 → 失敗並逐區指出哪一頁、哪一區、差幾項', async () => {
   const result = await smokeStorybook(path.join(fixtures, 'spec-v2-missing'), { specs: [demoSpec, plainSpec] });
   assert.equal(result.failures.length, 1, result.failures.join('\n'));
