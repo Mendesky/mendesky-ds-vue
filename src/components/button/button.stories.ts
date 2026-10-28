@@ -204,5 +204,6 @@ export const FullWidth: Story = {
     variant: 'filled', color: 'primary', size: 'M',
     text: '撐滿父容器', fullWidth: true,
   },
-  decorators: [() => ({ template: '<div style="width:320px;"><story /></div>' })],
+  // 外框不寫死寬度：本體文件網站把這個範例嵌在半欄寬的框裡，比 320px 窄
+  decorators: [() => ({ template: '<div style="max-width:320px;"><story /></div>' })],
 };
