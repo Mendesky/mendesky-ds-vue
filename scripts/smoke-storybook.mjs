@@ -1,4 +1,11 @@
 // 冒煙測試：逐一打開範例網站（Storybook 靜態建置）的每一頁，確認有畫出內容、沒有頁面錯誤、沒有沒註冊的元件，也沒有 Vue 的警告。
+// 說明頁另外檢查：
+//   - 本體文字的 #元件id 都換成了 Vue 元件名稱（程式碼區塊裡的 #action 這類插槽寫法不算）
+//   - 說明頁用 data-ds-id 標出是哪個元件，每一頁都對照它的規格檢查第 2 版欄位（部位、狀態、可以／不要這樣做、無障礙）：
+//     規格有內容的區塊要有標題、文字照共同規格，沒內容的不能有（不畫空標題）；各區標題的先後順序跟共同規格一樣；
+//     每一區畫出的項數跟規格一樣、每一項都有文字；無障礙每個分類畫在對的組、條目數對；
+//     「看範例」逐項對規格：規格有範例的那一項才有連結，連到範例網站裡有的範例，網址（href）也連到同一個範例
+//   - 規格有第 2 版欄位的元件，在範例網站都要找得到說明頁
 //
 // 用法：npm run build-storybook && node scripts/smoke-storybook.mjs [storybook-static 目錄]
 // 自己起一個只綁 127.0.0.1、port 由系統分配的靜態伺服器，跑完就關。
@@ -7,6 +14,8 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { findRefs } from '@mendesky/ds/scripts/component-refs.mjs';
+import { exportDocs } from './export-docs.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -38,12 +47,167 @@ function serve(dir) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-/** 逐頁檢查；回傳 { visited, failures } */
-export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
+/** 說明頁裡、程式碼區塊以外的每一段文字 */
+function docsTexts() {
+  const root = document.querySelector('#storybook-docs');
+  if (!root) return [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => (node.parentElement?.closest('pre, code') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+  });
+  const texts = [];
+  while (walker.nextNode()) texts.push(walker.currentNode.textContent);
+  return texts;
+}
+
+/** 規格的第 2 版欄位 → 說明頁上的區塊名稱、每一項的 data-testid、應有的項數（同本體 smoke-guides 的 V2_SECTIONS） */
+const V2_SECTIONS = [
+  ['部位', 'ds-doc-anatomy-item', (s) => s.anatomy?.length ?? 0],
+  ['狀態', 'ds-doc-state-item', (s) => s.states?.length ?? 0],
+  ['可以這樣做', 'ds-doc-do-item', (s) => s.dos?.length ?? 0],
+  ['不要這樣做', 'ds-doc-dont-item', (s) => s.donts?.length ?? 0],
+  ['無障礙', 'ds-doc-a11y-item', (s) => Object.values(s.a11y ?? {}).reduce((n, items) => n + (items?.length ?? 0), 0)],
+];
+const DODONT = '「可以這樣做、不要這樣做」';
+
+/** 第 2 版欄位每一區的標題：h2 的 data-testid、標題文字（共同規格逐字照抄）、算在這一區的項目。這一區規格是 0 項就不能有標題 */
+const V2_HEADINGS = [
+  ['ds-doc-anatomy', '部位', ['ds-doc-anatomy-item']],
+  ['ds-doc-states', '狀態', ['ds-doc-state-item']],
+  ['ds-doc-dodont', '可以這樣做、不要這樣做', ['ds-doc-do-item', 'ds-doc-dont-item']],
+  ['ds-doc-a11y', '無障礙', ['ds-doc-a11y-item']],
+];
+
+/** 說明頁上屬於第 2 版欄位的所有標題與項目（說明頁沒有 data-ds-id 時用來判斷有沒有畫出第 2 版欄位） */
+const V2_SELECTOR = [...V2_HEADINGS.map(([testid]) => testid), ...V2_SECTIONS.map(([, testid]) => testid)]
+  .map((testid) => `#storybook-docs [data-testid="${testid}"]`)
+  .join(', ');
+
+/** 說明頁各區標題（h2 的 data-testid）的先後順序，兩個框架的說明頁一樣；沒畫的區塊略過 */
+const SECTION_ORDER = [
+  'ds-doc-anatomy', 'ds-doc-states', 'ds-doc-dodont', 'ds-doc-example', 'ds-doc-props', 'ds-doc-usage', 'ds-doc-usage-notes', 'ds-doc-a11y', 'ds-doc-notes',
+];
+
+/** 無障礙的分組與分類小標籤（同 .storybook/ds-docs-page.ts 的 A11Y_GROUPS、A11Y_LABEL） */
+const A11Y_GROUPS = [
+  ['網頁和 APP 都要做到', [['keyboard', '鍵盤'], ['focus', '焦點'], ['screenReader', '報讀軟體'], ['motion', '動態'], ['touch', '觸控']]],
+  ['網頁專屬', [['aria', 'ARIA 與 HTML 語意']]],
+];
+
+const hasV2 = (spec) => V2_SECTIONS.some(([, , count]) => count(spec) > 0);
+
+/**
+ * 在瀏覽器裡讀說明頁；沒有 data-ds-id 回傳 null。
+ * 讀出：哪個元件（data-ds-id）、各區 h2 標題（照頁面順序）、每個 data-testid 的每一項（有沒有文字、掛了哪些範例連結）、
+ * 無障礙每個分類（所在組的 h3、小標籤、條目數）
+ */
+function docsPageFacts(testids) {
+  const page = document.querySelector('#storybook-docs [data-ds-id]');
+  if (!page) return null;
+  // 項目本身的文字，不算「看範例」連結
+  const textOf = (el) => {
+    const copy = el.cloneNode(true);
+    copy.querySelectorAll('[data-story-id]').forEach((a) => a.remove());
+    return copy.textContent.trim();
+  };
+  const item = (el) => ({
+    empty: textOf(el) === '',
+    links: [...el.querySelectorAll('[data-story-id]')].map((a) => ({
+      id: a.getAttribute('data-story-id'),
+      path: new URL(a.getAttribute('href') ?? '', location.href).searchParams.get('path'),
+    })),
+  });
+  return {
+    id: page.getAttribute('data-ds-id'),
+    headings: [...page.querySelectorAll('h2[data-testid]')].map((h) => ({ testid: h.getAttribute('data-testid'), text: h.textContent.trim() })),
+    items: Object.fromEntries(testids.map((t) => [t, [...page.querySelectorAll(`[data-testid="${t}"]`)].map(item)])),
+    a11y: [...page.querySelectorAll('.ds-doc-a11y__label')].map((label) => {
+      const group = label.closest('.ds-doc-a11y')?.previousElementSibling;
+      return {
+        group: group?.tagName === 'H3' ? group.textContent.trim() : '',
+        label: label.textContent.trim(),
+        count: label.nextElementSibling?.querySelectorAll('[data-testid="ds-doc-a11y-item"]').length ?? 0,
+      };
+    }),
+  };
+}
+
+/** 說明頁跟規格的第 2 版欄位對不上的地方。storyIds：範例網站裡有的範例 id */
+function v2Problems(spec, facts, storyIds) {
+  const out = [];
+  const want = Object.fromEntries(V2_SECTIONS.map(([, testid, count]) => [testid, count(spec)]));
+  // 標題：規格有內容的區塊要有一個、文字照共同規格；沒內容的不能有（不畫空標題）
+  for (const [testid, title, itemTestids] of V2_HEADINGS) {
+    const needed = itemTestids.some((t) => want[t] > 0);
+    const texts = facts.headings.filter((h) => h.testid === testid).map((h) => h.text);
+    if (needed && !texts.length) out.push(`規格有「${title}」，說明頁卻沒有這一區的標題（h2 data-testid="${testid}"）`);
+    else if (!needed && texts.length) out.push(`規格沒有「${title}」，說明頁卻畫了這一區的標題`);
+    else if (texts.length > 1) out.push(`「${title}」的標題畫了 ${texts.length} 個`);
+    else if (needed && texts[0] !== title) out.push(`「${title}」的標題文字是「${texts[0]}」`);
+  }
+  // 區塊順序
+  const shown = facts.headings.filter((h) => SECTION_ORDER.includes(h.testid));
+  const sorted = [...shown].sort((a, b) => SECTION_ORDER.indexOf(a.testid) - SECTION_ORDER.indexOf(b.testid));
+  if (shown.some((h, i) => h !== sorted[i])) {
+    out.push(`區塊順序不對：說明頁是 ${shown.map((h) => h.text).join(' → ')}，應該是 ${sorted.map((h) => h.text).join(' → ')}`);
+  }
+  // 每一區的項數，以及每一項都有文字
+  for (const [label, testid] of V2_SECTIONS) {
+    const items = facts.items[testid];
+    if (items.length !== want[testid]) out.push(`「${label}」規格有 ${want[testid]} 項，頁面畫出 ${items.length} 項`);
+    const empty = items.flatMap((x, i) => (x.empty ? [i + 1] : []));
+    if (empty.length) out.push(`「${label}」第 ${empty.join('、')} 項沒有文字`);
+  }
+  // 可以／不要這樣做：逐項對規格。規格寫了範例代號的那一項，要有一個連到「<元件id>--<代號>」的「看範例」，沒寫的項目不能有；
+  // 每個連結都要在範例網站裡（index.json 有這個範例），網址也要連到同一個範例
+  for (const [key, label, testid] of [['dos', '可以這樣做', 'ds-doc-do-item'], ['donts', '不要這樣做', 'ds-doc-dont-item']]) {
+    const items = facts.items[testid];
+    // 少畫的項目上面已經報了項數，這裡只對有畫出來的
+    (spec[key] ?? []).slice(0, items.length).forEach((e, i) => {
+      const expected = e.story ? `${spec.id}--${e.story}` : null;
+      const got = items[i].links.map((l) => l.id);
+      if (expected && !(got.length === 1 && got[0] === expected)) {
+        out.push(`「${label}」第 ${i + 1} 項應連到範例 ${expected}，頁面${got.length ? `連到 ${got.join('、')}` : '沒有範例連結'}`);
+      }
+      if (!expected && got.length) out.push(`「${label}」第 ${i + 1} 項規格沒有範例，頁面卻連到 ${got.join('、')}`);
+    });
+    for (const link of items.flatMap((x) => x.links)) {
+      if (!storyIds.has(link.id)) out.push(`${DODONT}連到範例網站沒有的範例 ${link.id}`);
+      if (link.path !== `/story/${link.id}`) out.push(`${DODONT}範例 ${link.id} 的連結網址是 ${link.path ?? '（沒有 path）'}，跟 data-story-id 對不上`);
+    }
+  }
+  // 無障礙：每個分類畫在對的組、小標籤對、條目數跟規格一樣（只數總數抓不到放錯分類）
+  const a11yWant = A11Y_GROUPS.flatMap(([group, cats]) =>
+    cats.filter(([key]) => spec.a11y?.[key]?.length).map(([key, label]) => `${group}／${label} ${spec.a11y[key].length} 項`),
+  );
+  const a11yGot = facts.a11y.map((c) => `${c.group}／${c.label} ${c.count} 項`);
+  if (a11yWant.join('、') !== a11yGot.join('、')) {
+    out.push(`「無障礙」的分類跟規格不同：規格是 ${a11yWant.join('、') || '（沒有）'}，頁面是 ${a11yGot.join('、') || '（沒有）'}`);
+  }
+  return out;
+}
+
+/**
+ * 逐頁檢查；回傳 { visited, failures }。
+ * refIds：Vue 有的元件 id；有給就檢查說明頁沒有留下這些 #元件id。給空陣列算失敗（拿不到 id 不等於沒有殘留）。
+ * specs：範例網站裡元件的規格；有給就逐頁對照 data-ds-id 的規格檢查第 2 版欄位。
+ *   給空陣列、沒有任何一份有第 2 版欄位、說明頁的 data-ds-id 對不到規格、畫了第 2 版欄位卻沒有 data-ds-id，都算失敗（檢查沒有執行不等於通過）。
+ */
+export async function smokeStorybook(dir, { timeout = 15000, refIds, specs } = {}) {
   const root = path.resolve(dir);
   const index = JSON.parse(readFileSync(path.join(root, 'index.json'), 'utf8'));
   const entries = Object.values(index.entries);
   if (entries.length === 0) return { visited: 0, failures: [`index.json 裡有 0 頁，文件網站沒有內容`] };
+  if (refIds && refIds.length === 0) return { visited: 0, failures: ['沒有拿到任何元件 id，無法檢查說明頁的 #元件id'] };
+  if (specs && specs.length === 0) return { visited: 0, failures: ['沒有拿到任何元件規格，無法檢查說明頁的第 2 版欄位'] };
+  const specsById = new Map((specs ?? []).map((s) => [s.id, s]));
+  const v2Ids = (specs ?? []).filter(hasV2).map((s) => s.id);
+  if (specs && v2Ids.length === 0) {
+    return { visited: 0, failures: ['規格裡沒有任何元件有第 2 版欄位（部位、狀態、可以／不要這樣做、無障礙），第 2 版欄位檢查沒有執行'] };
+  }
+  const known = new Set(refIds ?? []);
+  const storyIds = new Set(entries.filter((e) => e.type === 'story').map((e) => e.id));
+  const testids = V2_SECTIONS.map(([, testid]) => testid);
+  const docsFound = new Set(); // 找得到說明頁的元件 id（data-ds-id）
 
   const server = await serve(root);
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -64,6 +228,7 @@ export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
       page.on('console', onConsole);
       const docs = entry.type === 'docs';
       const target = docs ? '#storybook-docs .sbdocs' : '#storybook-root > *';
+      let rendered = false;
       try {
         await page.goto(`${base}/iframe.html?id=${encodeURIComponent(entry.id)}&viewMode=${docs ? 'docs' : 'story'}`);
         await page.waitForSelector(target, { state: 'attached', timeout });
@@ -77,8 +242,33 @@ export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
             .map((el) => el.tagName.toLowerCase()))],
         );
         if (unknown.length) errors.push(`有瀏覽器不認得的元素（元件沒註冊？）：${unknown.join(', ')}`);
+        rendered = true;
       } catch (e) {
         errors.push(`沒有畫出內容（等不到 ${target}）`);
+      }
+      if (rendered && docs && known.size) {
+        try {
+          const left = (await page.evaluate(docsTexts)).flatMap((t) => findRefs(t)).filter((id) => known.has(id));
+          if (left.length) errors.push(`說明頁有沒換掉的元件代號：${[...new Set(left)].map((id) => '#' + id).join('、')}`);
+        } catch (e) {
+          errors.push(`檢查元件代號時出錯：${e.message}`);
+        }
+      }
+      if (rendered && docs && specs) {
+        try {
+          const facts = await page.evaluate(docsPageFacts, testids);
+          if (facts) {
+            docsFound.add(facts.id);
+            const spec = specsById.get(facts.id);
+            if (spec) errors.push(...v2Problems(spec, facts, storyIds));
+            else errors.push(`說明頁標的元件 ${facts.id}（data-ds-id）在規格裡找不到，無法檢查第 2 版欄位`);
+          } else if (await page.locator(V2_SELECTOR).count()) {
+            // 沒標 data-ds-id 的頁（例如沒有說明檔、退回 Storybook 預設版型）不該有第 2 版欄位；畫了就對不到規格
+            errors.push('說明頁畫了第 2 版欄位，卻沒有 data-ds-id，無法對照規格');
+          }
+        } catch (e) {
+          errors.push(`檢查第 2 版欄位時出錯：${e.message}`);
+        }
       }
       page.off('pageerror', onError);
       page.off('console', onConsole);
@@ -89,16 +279,23 @@ export async function smokeStorybook(dir, { timeout = 15000 } = {}) {
     await browser.close();
     server.close();
   }
+  // 說明頁沒標 data-ds-id、或根本沒建出來，上面就對不到規格：有第 2 版欄位的元件都要找得到說明頁
+  for (const id of v2Ids) {
+    if (!docsFound.has(id)) failures.push(`${id}：規格有第 2 版欄位，範例網站卻找不到它的說明頁（沒有 data-ds-id="${id}" 的說明頁）`);
+  }
   return { visited, failures };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const dir = process.argv[2] ?? path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'storybook-static');
-  const { visited, failures } = await smokeStorybook(dir);
+  const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const dir = process.argv[2] ?? path.join(repo, 'storybook-static');
+  // 範例網站只有 Vue 做了的元件：用合併後的說明（本體規格＋Vue 用法）當規格，它們的 id 也拿來檢查沒換掉的 #元件id
+  const docs = (await exportDocs(repo)).components.map((c) => c.doc);
+  const { visited, failures } = await smokeStorybook(dir, { refIds: docs.map((d) => d.id), specs: docs });
   if (failures.length) {
     console.error(`冒煙測試失敗（${failures.length} / ${visited} 頁）：`);
     for (const f of failures) console.error(`  - ${f}`);
     process.exit(1);
   }
-  console.log(`冒煙測試通過：${visited} 頁都畫出內容、沒有錯誤`);
+  console.log(`冒煙測試通過：${visited} 頁都畫出內容、沒有錯誤；${docs.filter(hasV2).length} 個元件的第 2 版欄位都跟規格一致`);
 }

@@ -5,7 +5,7 @@
 //   2. 說明檔列的屬性名稱，跟元件的 defineProps／defineEmits 完全一致
 //      命名：屬性寫原名（text）、事件寫 @ 加 kebab-case（@btn-click）、modelValue＋update:modelValue 合寫成 v-model
 //   3. 說明檔能正確載入（語法錯誤直接算失敗，不略過）
-//   4. 說明檔只放 Vue 用法；何時用、注意事項等規格欄位屬於本體 @mendesky/ds
+//   4. 說明檔只放 Vue 用法；何時用、注意事項、部位、狀態、無障礙、可以／不要這樣做等規格欄位屬於本體 @mendesky/ds
 //   5. 每份說明都有對應的本體規格（Vue 版試做中，本體規格不必每份都有 Vue 說明）
 //   6. 說明檔的 usageNotes（Vue 專屬注意事項）每筆是文字或 { type, content }
 // 一個元件都沒掃到也算失敗，避免「沒東西可查所以全過」。
@@ -25,8 +25,8 @@ const ts = require('typescript');
 // 只在母元件內部使用、不給外部直接用的子元件：不需要說明檔
 export const INTERNAL_COMPONENTS = ['DsSelectPanel'];
 
-// 規格欄位：屬於本體，不得出現在 Vue 說明檔
-const SPEC_ONLY_KEYS = ['name', 'group', 'when', 'description', 'notes', 'customTables'];
+// 規格欄位：屬於本體，不得出現在 Vue 說明檔（後五個是規格第 2 版的部位、狀態、無障礙、可以／不要這樣做）
+const SPEC_ONLY_KEYS = ['name', 'group', 'when', 'description', 'notes', 'customTables', 'anatomy', 'states', 'a11y', 'dos', 'donts'];
 
 const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 

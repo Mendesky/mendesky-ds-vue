@@ -21,6 +21,12 @@ test('說明檔漏了事件、多了元件沒有的屬性、放了規格欄位 �
   assert.match(text, /when 屬於本體的元件規格/);
 });
 
+test('說明檔放了規格第 2 版欄位（部位、狀態、無障礙、可以／不要這樣做）→ 失敗並逐項指出', async () => {
+  const { failures } = await checkDocs(path.join(fixtures, 'spec-v2-in-docs'));
+  assert.equal(failures.length, 1, failures.join('\n'));
+  assert.match(failures[0], /thing\.docs\.ts：說明檔只放 Vue 用法；anatomy、states、a11y、dos、donts 屬於本體的元件規格/);
+});
+
 test('元件旁邊沒有說明檔 → 失敗', async () => {
   const { failures } = await checkDocs(path.join(fixtures, 'nodoc'));
   assert.equal(failures.length, 1);
