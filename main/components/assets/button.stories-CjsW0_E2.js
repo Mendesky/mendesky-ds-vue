@@ -6,7 +6,7 @@ import{_ as Me}from"./DsButton-CF-IfUxF.js";import{I as Le}from"./DsIcon-BVjnUJz
         <DsButton variant="filled" color="primary" size="M"   text="M 32px"></DsButton>
         <DsButton variant="filled" color="primary" size="L"   text="L 40px"></DsButton>
       </div>
-    `,components:{DsButton:Me}})},d={args:{variant:"filled",color:"primary",size:"M",text:"新增項目",leftIcon:"Plus"}},m={args:{variant:"outlined",color:"primary",size:"M",text:"展開",rightIcon:"DownArrow"}},u={args:{variant:"tonal",color:"primary",size:"M",text:"篩選",leftIcon:"Filter",rightIcon:"DownArrow"}},f={args:{variant:"outlined",color:"primary",size:"M",leftIcon:"Filter",text:"篩選",leftLabel:{text:"3",color:"SoftBlue"}}},g={args:{variant:"tonal",color:"primary",size:"M",text:"儲存",rightLabel:{text:"⌘S",color:"GreyOutline"}}},x={args:{variant:"outlined",color:"primary",size:"M",leftIcon:"Briefcase",leftLabel:{text:"NEW",color:"Red"},centerLabel:{text:"5",color:"SoftBlue"},text:"我的項目",rightLabel:{text:"全部",color:"GreyOutline"}}},y={args:{variant:"filled",color:"primary",size:"M",text:"不可操作",disabled:!0}},v={args:{variant:"filled",color:"primary",size:"M",text:"撐滿父容器",fullWidth:!0},decorators:[()=>({template:'<div style="width:320px;"><story /></div>'})]};var S,b,h;e.parameters={...e.parameters,docs:{...(S=e.parameters)==null?void 0:S.docs,source:{originalSource:`{
+    `,components:{DsButton:Me}})},d={args:{variant:"filled",color:"primary",size:"M",text:"新增項目",leftIcon:"Plus"}},m={args:{variant:"outlined",color:"primary",size:"M",text:"展開",rightIcon:"DownArrow"}},u={args:{variant:"tonal",color:"primary",size:"M",text:"篩選",leftIcon:"Filter",rightIcon:"DownArrow"}},f={args:{variant:"outlined",color:"primary",size:"M",leftIcon:"Filter",text:"篩選",leftLabel:{text:"3",color:"SoftBlue"}}},g={args:{variant:"tonal",color:"primary",size:"M",text:"儲存",rightLabel:{text:"⌘S",color:"GreyOutline"}}},x={args:{variant:"outlined",color:"primary",size:"M",leftIcon:"Briefcase",leftLabel:{text:"NEW",color:"Red"},centerLabel:{text:"5",color:"SoftBlue"},text:"我的項目",rightLabel:{text:"全部",color:"GreyOutline"}}},y={args:{variant:"filled",color:"primary",size:"M",text:"不可操作",disabled:!0}},v={args:{variant:"filled",color:"primary",size:"M",text:"撐滿父容器",fullWidth:!0},decorators:[()=>({template:'<div style="max-width:320px;"><story /></div>'})]};var S,b,h;e.parameters={...e.parameters,docs:{...(S=e.parameters)==null?void 0:S.docs,source:{originalSource:`{
   args: {
     variant: 'filled',
     color: 'primary',
@@ -176,7 +176,8 @@ import{_ as Me}from"./DsButton-CF-IfUxF.js";import{I as Le}from"./DsIcon-BVjnUJz
     text: '撐滿父容器',
     fullWidth: true
   },
+  // 外框不寫死寬度：本體文件網站把這個範例嵌在半欄寬的框裡，比 320px 窄
   decorators: [() => ({
-    template: '<div style="width:320px;"><story /></div>'
+    template: '<div style="max-width:320px;"><story /></div>'
   })]
 }`,...(he=(be=v.parameters)==null?void 0:be.docs)==null?void 0:he.source}}};const Oe=["Default","FilledPrimary","TonalPrimary","TonalNeutral","OutlinedPrimary","GhostPrimary","Elevated","FilledSuccess","FilledDanger","FilledNeutral","AllSizes","WithLeftIcon","WithRightIcon","WithBothIcons","WithLeftLabel","WithRightLabel","WithAllLabels","Disabled","FullWidth"];export{p as AllSizes,e as Default,y as Disabled,n as Elevated,l as FilledDanger,c as FilledNeutral,r as FilledPrimary,i as FilledSuccess,v as FullWidth,s as GhostPrimary,o as OutlinedPrimary,a as TonalNeutral,t as TonalPrimary,x as WithAllLabels,u as WithBothIcons,d as WithLeftIcon,f as WithLeftLabel,m as WithRightIcon,g as WithRightLabel,Oe as __namedExportsOrder,Pe as default};
