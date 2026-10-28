@@ -3,7 +3,7 @@ import type { ComponentApi } from '../../docs/component-doc';
 export const buttonDoc: ComponentApi = {
   id: 'button',
   selector: '<DsButton>',
-  summary: 'variant: filled|tonal|outlined|ghost|elevated · color: primary|success|danger|neutral · size: XXS|XS|S|M|L · leftIcon/rightIcon · disabled fullWidth loading · clickableWhenDisabled disabledMessage · @btn-click @disabled-click',
+  summary: 'variant: filled|tonal|outlined|ghost|elevated · color: primary|success|danger|neutral · size: XXS|XS|S|M|L · leftIcon/rightIcon · disabled fullWidth loading · clickableWhenDisabled disabledMessage · ariaLabel ariaPressed ariaCurrent · @btn-click @disabled-click',
   props: [
     {
       name: 'variant',
@@ -88,6 +88,24 @@ export const buttonDoc: ComponentApi = {
       desc: 'clickableWhenDisabled=true 且 disabled=true 時，點擊按鈕上方顯示的 tooltip 訊息。單條傳 string，多條傳 string[]（以 bullet list 呈現）。',
     },
     {
+      name: 'ariaLabel',
+      type: 'string',
+      default: "''",
+      desc: '報讀軟體念的名稱，套在內層 button 的 aria-label。只有圖示、沒有文字時必填；沒填時開發模式會在 console 警告。寫成 aria-label 屬性也會被當成這個 prop，落在內層 button。',
+    },
+    {
+      name: 'ariaPressed',
+      type: 'boolean | null',
+      default: 'null',
+      desc: '切換鈕的按下／未按下狀態，套在內層 button 的 aria-pressed。null 表示不是切換鈕，不輸出。',
+    },
+    {
+      name: 'ariaCurrent',
+      type: 'ButtonAriaCurrent | null',
+      default: 'null',
+      desc: "清單或導覽中的「目前這一項」，套在內層 button 的 aria-current。值為 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false'；null 不輸出。",
+    },
+    {
       name: '@btn-click',
       type: '() => void',
       desc: '正常點擊事件輸出',
@@ -130,6 +148,17 @@ export const buttonDoc: ComponentApi = {
   :disabled="false"
   :fullWidth="false"
   @btn-click="onConfirm()"
+></DsButton>`,
+    },
+    {
+      label: '只有圖示時給名稱',
+      code: `<DsButton
+  variant="outlined"
+  color="neutral"
+  size="XS"
+  leftIcon="LeftArrow"
+  ariaLabel="上一頁"
+  @btn-click="goToPrevPage()"
 ></DsButton>`,
     },
   ],
