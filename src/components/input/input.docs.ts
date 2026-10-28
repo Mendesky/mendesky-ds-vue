@@ -3,7 +3,7 @@ import type { ComponentApi } from '../../docs/component-doc';
 export const inputDoc: ComponentApi = {
   id: 'input',
   selector: '<DsInput>',
-  summary: 'size: S|M|L · placeholder type inputMode sanitize initialValue errorMessage errorPosition: top|bottom · disabled readonly · @value-change @blur',
+  summary: 'size: S|M|L · placeholder type inputMode sanitize initialValue errorMessage errorPosition: top|bottom · disabled readonly · ariaLabel autocomplete name inputId · @value-change @blur @password-visibility-change',
   props: [
     {
       name: 'size',
@@ -66,6 +66,30 @@ export const inputDoc: ComponentApi = {
       desc: '唯讀狀態：不可編輯、隱藏清空鈕，但文字維持正常色、可聚焦選取（展示型欄位用，如分享連結）。與 disabled 不同——disabled 文字轉淡灰且不可聚焦。',
     },
     {
+      name: 'ariaLabel',
+      type: 'string',
+      default: "''",
+      desc: '報讀軟體念的名稱，落在內層 input 的 aria-label。直接寫在有 label 的 DsField 裡不用設，會自動念欄位標題；沒有欄位標題、或包在別的元件裡時才設（例如表格列內的輸入框）。設了就只念它，不念欄位標題。',
+    },
+    {
+      name: 'autocomplete',
+      type: 'string',
+      default: "''",
+      desc: "透傳到內層 input 的 autocomplete。本站登入用 'username'／'current-password'；別的平台的帳密（不是登入本站用的）帳號欄用 'off'、密碼欄用 'new-password'，避免瀏覽器把本站帳密填進去。空字串不輸出。",
+    },
+    {
+      name: 'name',
+      type: 'string',
+      default: "''",
+      desc: '透傳到內層 input 的 name；空字串不輸出',
+    },
+    {
+      name: 'inputId',
+      type: 'string',
+      default: "''",
+      desc: '內層 input 的 id，給外面自己寫的 label for 指向。不要在 DsInput 上寫 id：它會落在外框上，指向它的 label 連不到輸入框。',
+    },
+    {
       name: '@value-change',
       type: '(value: string) => void',
       desc: '值變更事件',
@@ -75,6 +99,12 @@ export const inputDoc: ComponentApi = {
       name: '@blur',
       type: '(value: string) => void',
       desc: 'blur 事件，帶出當前值；用於需要 blur 後觸發邏輯的場景（如地址郵遞區號 lookup）',
+      isOutput: true,
+    },
+    {
+      name: '@password-visibility-change',
+      type: '(visible: boolean) => void',
+      desc: "type='password' 時按眼睛按鈕發出；true＝切成明文。用於明文不放在前端、切成明文才向後端取回的欄位",
       isOutput: true,
     },
   ],
@@ -103,8 +133,22 @@ export const inputDoc: ComponentApi = {
       code: '<DsInput type="date" size="M" @value-change="onDateChange($event)"></DsInput>',
     },
     {
-      label: '唯讀展示（如分享連結，不可編輯但可讀可選取）',
-      code: '<DsInput size="M" :initialValue="shareUrl" :readonly="true"></DsInput>',
+      label: '唯讀展示（如分享連結，不可編輯但可讀可選取）；沒有欄位標題時用 ariaLabel 給名稱',
+      code: '<DsInput size="M" ariaLabel="分享連結" :initialValue="shareUrl" :readonly="true"></DsInput>',
+    },
+    {
+      label: '別的平台的帳密（不讓瀏覽器填入本站帳密），切成明文時才取回密碼',
+      code: `<DsField label="服務平台帳號">
+  <DsInput placeholder="請輸入帳號" autocomplete="off" @blur="onAccountChange($event)"></DsInput>
+</DsField>
+<DsField label="服務平台密碼">
+  <DsInput
+    type="password"
+    placeholder="請輸入密碼"
+    autocomplete="new-password"
+    @password-visibility-change="onPasswordVisibilityChange($event)"
+  ></DsInput>
+</DsField>`,
     },
   ],
 };
